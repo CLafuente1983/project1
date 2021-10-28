@@ -32,8 +32,10 @@ halo_data<-read_csv("data/HaloData.csv")
 
 weather <- read_csv("data/austin_weather.csv")
 halo_data
-
 weather
+
+head(halo_data)
+head(weather)
 ```
 
 #### Tidying: Reshaping
