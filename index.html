@@ -1537,49 +1537,25 @@ div.tocify {
 <h3>Cristina E Lafuente</h3>
 <div id="introduction" class="section level4">
 <h4>Introduction</h4>
-<p>Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.</p>
+<p>I am going to be looking at some of the data from my personal fitness tracker and comparing it with the daily weather. Many factors impact how active we are on a daily basis including how busy we are, often with sedentary activities such as school or work but I often feel energized by the cooler weather. I wondered if there was any correlation between my activity levels and the weather or if it was restricted to simply a feeling. I thought that I could compare local weather data along with my fitness tracker data to look at some of the interesting variables tracked by both and see whether there were any interesting observations which could be made. Fitness tracking data comes from my Amazon Halo band which I began using when it was in beta testing December of 2020. Weather data comes from the National Oceanic and Atmospheric Administration <a href="https://www.ncdc.noaa.gov/cdo-web" class="uri">https://www.ncdc.noaa.gov/cdo-web</a>. The NOAA data was downloaded from the NOAA site and then uploaded here, similarly, the halo data has been compiled by Amazon, downloaded and then uploaded here also as a csv file.</p>
 <pre class="r"><code># read your datasets in here, e.g., with read_csv()
 library(tidyverse)
+library(dplyr)
+library(tidyr)
 halo_data &lt;- read_csv(&quot;data/HaloData.csv&quot;)
 
-weather &lt;- read_csv(&quot;data/austin_weather.csv&quot;)
-halo_data</code></pre>
-<pre><code>## # A tibble: 37,453 x 8
-##    `Data Type` `Start Time`        `End Time`          Unit  `Software Versi…
-##    &lt;chr&gt;       &lt;dttm&gt;              &lt;dttm&gt;              &lt;chr&gt; &lt;chr&gt;           
-##  1 HEARTRATE   2021-10-14 19:24:24 2021-10-14 19:43:54 BEAT… 1.0.286427.0    
-##  2 HEARTRATE   2021-10-14 18:54:24 2021-10-14 19:23:54 BEAT… 1.0.286427.0    
-##  3 HEARTRATE   2021-10-14 18:23:54 2021-10-14 18:53:54 BEAT… 1.0.286427.0    
-##  4 HEARTRATE   2021-10-14 17:54:24 2021-10-14 18:23:24 BEAT… 1.0.286427.0    
-##  5 HEARTRATE   2021-10-14 17:23:54 2021-10-14 17:53:54 BEAT… 1.0.286427.0    
-##  6 HEARTRATE   2021-10-14 16:53:54 2021-10-14 17:23:24 BEAT… 1.0.286427.0    
-##  7 HEARTRATE   2021-10-14 16:23:24 2021-10-14 16:53:24 BEAT… 1.0.286427.0    
-##  8 HEARTRATE   2021-10-14 15:53:54 2021-10-14 16:22:54 BEAT… 1.0.286427.0    
-##  9 HEARTRATE   2021-10-14 15:23:24 2021-10-14 15:53:24 BEAT… 1.0.286427.0    
-## 10 HEARTRATE   2021-10-14 14:53:24 2021-10-14 15:22:54 BEAT… 1.0.286427.0    
-## # … with 37,443 more rows, and 3 more variables: `Software OS` &lt;chr&gt;, `Software
-## #   OS Version` &lt;dbl&gt;, Amounts &lt;chr&gt;</code></pre>
-<pre class="r"><code>weather</code></pre>
-<pre><code>## # A tibble: 1,319 x 21
-##    Date       TempHighF TempAvgF TempLowF DewPointHighF DewPointAvgF
-##    &lt;date&gt;         &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;         &lt;chr&gt;       
-##  1 2013-12-21        74       60       45 67            49          
-##  2 2013-12-22        56       48       39 43            36          
-##  3 2013-12-23        58       45       32 31            27          
-##  4 2013-12-24        61       46       31 36            28          
-##  5 2013-12-25        58       50       41 44            40          
-##  6 2013-12-26        57       48       39 39            36          
-##  7 2013-12-27        60       53       45 41            39          
-##  8 2013-12-28        62       51       40 43            39          
-##  9 2013-12-29        64       50       36 49            41          
-## 10 2013-12-30        44       40       35 31            26          
-## # … with 1,309 more rows, and 15 more variables: DewPointLowF &lt;chr&gt;,
-## #   HumidityHighPercent &lt;chr&gt;, HumidityAvgPercent &lt;chr&gt;,
-## #   HumidityLowPercent &lt;chr&gt;, SeaLevelPressureHighInches &lt;chr&gt;,
-## #   SeaLevelPressureAvgInches &lt;chr&gt;, SeaLevelPressureLowInches &lt;chr&gt;,
-## #   VisibilityHighMiles &lt;chr&gt;, VisibilityAvgMiles &lt;chr&gt;,
-## #   VisibilityLowMiles &lt;chr&gt;, WindHighMPH &lt;chr&gt;, WindAvgMPH &lt;chr&gt;,
-## #   WindGustMPH &lt;chr&gt;, PrecipitationSumInches &lt;chr&gt;, Events &lt;chr&gt;</code></pre>
+
+glimpse(halo_data)</code></pre>
+<pre><code>## Rows: 37,453
+## Columns: 8
+## $ `Data Type`           &lt;chr&gt; &quot;HEARTRATE&quot;, &quot;HEARTRATE&quot;, &quot;HEARTRATE&quot;, &quot;HEARTRA…
+## $ `Start Time`          &lt;dttm&gt; 2021-10-14 19:24:24, 2021-10-14 18:54:24, 2021…
+## $ `End Time`            &lt;dttm&gt; 2021-10-14 19:43:54, 2021-10-14 19:23:54, 2021…
+## $ Unit                  &lt;chr&gt; &quot;BEATSPERMINUTE&quot;, &quot;BEATSPERMINUTE&quot;, &quot;BEATSPERMI…
+## $ `Software Version`    &lt;chr&gt; &quot;1.0.286427.0&quot;, &quot;1.0.286427.0&quot;, &quot;1.0.286427.0&quot;,…
+## $ `Software OS`         &lt;chr&gt; &quot;android&quot;, &quot;android&quot;, &quot;android&quot;, &quot;android&quot;, &quot;an…
+## $ `Software OS Version` &lt;dbl&gt; 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,…
+## $ Amounts               &lt;chr&gt; &quot;63.0, 63.0, 62.0, 61.0, 63.0, 62.0, 62.0, 65.0…</code></pre>
 <pre class="r"><code>head(halo_data)</code></pre>
 <pre><code>## # A tibble: 6 x 8
 ##   `Data Type` `Start Time`        `End Time`          Unit  `Software Versi…
@@ -1592,36 +1568,190 @@ halo_data</code></pre>
 ## 6 HEARTRATE   2021-10-14 16:53:54 2021-10-14 17:23:24 BEAT… 1.0.286427.0    
 ## # … with 3 more variables: `Software OS` &lt;chr&gt;, `Software OS Version` &lt;dbl&gt;,
 ## #   Amounts &lt;chr&gt;</code></pre>
-<pre class="r"><code>head(weather)</code></pre>
-<pre><code>## # A tibble: 6 x 21
-##   Date       TempHighF TempAvgF TempLowF DewPointHighF DewPointAvgF DewPointLowF
-##   &lt;date&gt;         &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;         &lt;chr&gt;        &lt;chr&gt;       
-## 1 2013-12-21        74       60       45 67            49           43          
-## 2 2013-12-22        56       48       39 43            36           28          
-## 3 2013-12-23        58       45       32 31            27           23          
-## 4 2013-12-24        61       46       31 36            28           21          
-## 5 2013-12-25        58       50       41 44            40           36          
-## 6 2013-12-26        57       48       39 39            36           33          
-## # … with 14 more variables: HumidityHighPercent &lt;chr&gt;,
-## #   HumidityAvgPercent &lt;chr&gt;, HumidityLowPercent &lt;chr&gt;,
-## #   SeaLevelPressureHighInches &lt;chr&gt;, SeaLevelPressureAvgInches &lt;chr&gt;,
-## #   SeaLevelPressureLowInches &lt;chr&gt;, VisibilityHighMiles &lt;chr&gt;,
-## #   VisibilityAvgMiles &lt;chr&gt;, VisibilityLowMiles &lt;chr&gt;, WindHighMPH &lt;chr&gt;,
-## #   WindAvgMPH &lt;chr&gt;, WindGustMPH &lt;chr&gt;, PrecipitationSumInches &lt;chr&gt;,
-## #   Events &lt;chr&gt;</code></pre>
+<pre class="r"><code>austin_weather &lt;- read_csv(&quot;data/2763043.csv&quot;)
+
+head(austin_weather)</code></pre>
+<pre><code>## # A tibble: 6 x 34
+##   STATION NAME  LATITUDE LONGITUDE ELEVATION DATE        AWND AWND_ATTRIBUTES
+##   &lt;chr&gt;   &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;date&gt;     &lt;dbl&gt; &lt;chr&gt;          
+## 1 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## 2 USW000… AUST…     30.3     -97.8      204. 2019-01-02  6.49 ,,W            
+## 3 USW000… AUST…     30.3     -97.8      204. 2019-01-03  4.92 ,,W            
+## 4 USW000… AUST…     30.3     -97.8      204. 2019-01-04  2.68 ,,W            
+## 5 USW000… AUST…     30.3     -97.8      204. 2019-01-05  1.79 ,,W            
+## 6 USW000… AUST…     30.3     -97.8      204. 2019-01-06  4.92 ,,W            
+## # … with 26 more variables: PRCP &lt;dbl&gt;, PRCP_ATTRIBUTES &lt;chr&gt;, SNOW &lt;dbl&gt;,
+## #   SNOW_ATTRIBUTES &lt;chr&gt;, SNWD &lt;dbl&gt;, SNWD_ATTRIBUTES &lt;chr&gt;, TAVG &lt;lgl&gt;,
+## #   TAVG_ATTRIBUTES &lt;lgl&gt;, TMAX &lt;dbl&gt;, TMAX_ATTRIBUTES &lt;chr&gt;, TMIN &lt;dbl&gt;,
+## #   TMIN_ATTRIBUTES &lt;chr&gt;, WT01 &lt;dbl&gt;, WT01_ATTRIBUTES &lt;chr&gt;, WT02 &lt;dbl&gt;,
+## #   WT02_ATTRIBUTES &lt;chr&gt;, WT03 &lt;dbl&gt;, WT03_ATTRIBUTES &lt;chr&gt;, WT04 &lt;dbl&gt;,
+## #   WT04_ATTRIBUTES &lt;chr&gt;, WT05 &lt;dbl&gt;, WT05_ATTRIBUTES &lt;chr&gt;, WT06 &lt;dbl&gt;,
+## #   WT06_ATTRIBUTES &lt;chr&gt;, WT08 &lt;dbl&gt;, WT08_ATTRIBUTES &lt;chr&gt;</code></pre>
+<pre class="r"><code>glimpse(austin_weather)</code></pre>
+<pre><code>## Rows: 1,019
+## Columns: 34
+## $ STATION         &lt;chr&gt; &quot;USW00013958&quot;, &quot;USW00013958&quot;, &quot;USW00013958&quot;, &quot;USW0001…
+## $ NAME            &lt;chr&gt; &quot;AUSTIN CAMP MABRY, TX US&quot;, &quot;AUSTIN CAMP MABRY, TX US…
+## $ LATITUDE        &lt;dbl&gt; 30.3208, 30.3208, 30.3208, 30.3208, 30.3208, 30.3208,…
+## $ LONGITUDE       &lt;dbl&gt; -97.7604, -97.7604, -97.7604, -97.7604, -97.7604, -97…
+## $ ELEVATION       &lt;dbl&gt; 204.2, 204.2, 204.2, 204.2, 204.2, 204.2, 204.2, 204.…
+## $ DATE            &lt;date&gt; 2019-01-01, 2019-01-02, 2019-01-03, 2019-01-04, 2019…
+## $ AWND            &lt;dbl&gt; 6.49, 6.49, 4.92, 2.68, 1.79, 4.92, 2.91, 3.80, 5.59,…
+## $ AWND_ATTRIBUTES &lt;chr&gt; &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W…
+## $ PRCP            &lt;dbl&gt; 0.00, 2.34, 0.24, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,…
+## $ PRCP_ATTRIBUTES &lt;chr&gt; &quot;,,W,2400&quot;, &quot;,,W,2400&quot;, &quot;,,W,2400&quot;, &quot;,,W,2400&quot;, &quot;,,W,…
+## $ SNOW            &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+## $ SNOW_ATTRIBUTES &lt;chr&gt; &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W…
+## $ SNWD            &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+## $ SNWD_ATTRIBUTES &lt;chr&gt; &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W…
+## $ TAVG            &lt;lgl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ TAVG_ATTRIBUTES &lt;lgl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ TMAX            &lt;dbl&gt; 46, 41, 52, 66, 75, 72, 77, 77, 62, 60, 61, 61, 54, 5…
+## $ TMAX_ATTRIBUTES &lt;chr&gt; &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W…
+## $ TMIN            &lt;dbl&gt; 39, 36, 34, 32, 37, 42, 59, 53, 46, 42, 48, 44, 37, 3…
+## $ TMIN_ATTRIBUTES &lt;chr&gt; &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W…
+## $ WT01            &lt;dbl&gt; 1, 1, 1, 1, NA, NA, 1, 1, NA, NA, 1, 1, NA, NA, NA, 1…
+## $ WT01_ATTRIBUTES &lt;chr&gt; &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, &quot;,,W&quot;, NA, NA, &quot;,,W&quot;, &quot;,,W&quot;, NA,…
+## $ WT02            &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, 1, NA, NA, 1, 1, NA, NA, …
+## $ WT02_ATTRIBUTES &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, &quot;,,W&quot;, NA, NA, &quot;,,W&quot;, &quot;,,…
+## $ WT03            &lt;dbl&gt; NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+## $ WT03_ATTRIBUTES &lt;chr&gt; NA, NA, &quot;,,W&quot;, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+## $ WT04            &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ WT04_ATTRIBUTES &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ WT05            &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ WT05_ATTRIBUTES &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ WT06            &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ WT06_ATTRIBUTES &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…
+## $ WT08            &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 1…
+## $ WT08_ATTRIBUTES &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, &quot;…</code></pre>
+<pre class="r"><code>halo_data %&gt;% group_by(&quot;Data Type&quot;) %&gt;% filter(`Data Type` == 
+    &quot;STEPS&quot;)</code></pre>
+<pre><code>## # A tibble: 7,940 x 9
+## # Groups:   &quot;Data Type&quot; [1]
+##    `Data Type` `Start Time`        `End Time`          Unit  `Software Versi…
+##    &lt;chr&gt;       &lt;dttm&gt;              &lt;dttm&gt;              &lt;chr&gt; &lt;chr&gt;           
+##  1 STEPS       2021-10-14 19:20:11 2021-10-14 19:20:11 &lt;NA&gt;  1.0.286427.0    
+##  2 STEPS       2021-10-14 18:31:22 2021-10-14 18:49:18 &lt;NA&gt;  1.0.286427.0    
+##  3 STEPS       2021-10-14 18:20:54 2021-10-14 18:20:54 &lt;NA&gt;  1.0.286427.0    
+##  4 STEPS       2021-10-14 17:20:38 2021-10-14 17:22:38 &lt;NA&gt;  1.0.286427.0    
+##  5 STEPS       2021-10-14 16:01:56 2021-10-14 16:05:55 &lt;NA&gt;  1.0.286427.0    
+##  6 STEPS       2021-10-14 15:27:03 2021-10-14 15:55:57 &lt;NA&gt;  1.0.286427.0    
+##  7 STEPS       2021-10-14 14:56:41 2021-10-14 15:05:38 &lt;NA&gt;  1.0.286427.0    
+##  8 STEPS       2021-10-14 14:07:52 2021-10-14 14:14:51 &lt;NA&gt;  1.0.286427.0    
+##  9 STEPS       2021-10-14 05:50:37 2021-10-14 05:53:07 &lt;NA&gt;  1.0.286427.0    
+## 10 STEPS       2021-10-14 04:19:29 2021-10-14 04:35:55 &lt;NA&gt;  1.0.286427.0    
+## # … with 7,930 more rows, and 4 more variables: `Software OS` &lt;chr&gt;, `Software
+## #   OS Version` &lt;dbl&gt;, Amounts &lt;chr&gt;, `&quot;Data Type&quot;` &lt;chr&gt;</code></pre>
 </div>
 <div id="tidying-reshaping" class="section level4">
 <h4>Tidying: Reshaping</h4>
 <p>If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.</p>
-<pre class="r"><code># your tidying code (if applicable; can also wait until
-# wrangling section)</code></pre>
+<p><em>To begin, the halo data has several types of data (heartrate, steps, and calories) all listed in the <code>Data Type</code> column so the first step is to give each of those types their own columns. The values from the amounts column should be assigned to these values for those days. </em></p>
+<pre class="r"><code>halo_data &lt;- halo_data %&gt;% pivot_wider(names_from = `Data Type`, 
+    values_from = &quot;Amounts&quot;)  ##%&gt;% filter(!is.na(STEPS)) ## testing that amounts were appropriately assigned
+head(halo_data)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   `Start Time`        `End Time`          Unit  `Software Versi… `Software OS`
+##   &lt;dttm&gt;              &lt;dttm&gt;              &lt;chr&gt; &lt;chr&gt;            &lt;chr&gt;        
+## 1 2021-10-14 19:24:24 2021-10-14 19:43:54 BEAT… 1.0.286427.0     android      
+## 2 2021-10-14 18:54:24 2021-10-14 19:23:54 BEAT… 1.0.286427.0     android      
+## 3 2021-10-14 18:23:54 2021-10-14 18:53:54 BEAT… 1.0.286427.0     android      
+## 4 2021-10-14 17:54:24 2021-10-14 18:23:24 BEAT… 1.0.286427.0     android      
+## 5 2021-10-14 17:23:54 2021-10-14 17:53:54 BEAT… 1.0.286427.0     android      
+## 6 2021-10-14 16:53:54 2021-10-14 17:23:24 BEAT… 1.0.286427.0     android      
+## # … with 4 more variables: `Software OS Version` &lt;dbl&gt;, HEARTRATE &lt;chr&gt;,
+## #   STEPS &lt;chr&gt;, CALORIES &lt;chr&gt;</code></pre>
+<p><em>Next, there are quite a few values for each of the time segments currently assigned a row. So we will separate the amounts so that each value has its own row.</em></p>
+<pre class="r"><code>halo_data &lt;- halo_data %&gt;% separate_rows(HEARTRATE, sep = &quot;, &quot;) %&gt;% 
+    separate_rows(STEPS, sep = &quot;, &quot;) %&gt;% separate_rows(CALORIES, 
+    sep = &quot;, &quot;)</code></pre>
+<p><em>Then, pivot longer so that there aren’t columns for start and end time but rather one column that tells whether it is a start or end time and another column that has the date and time. </em></p>
+<pre class="r"><code>halo_data &lt;- halo_data %&gt;% pivot_longer(cols = c(&quot;Start Time&quot;, 
+    &quot;End Time&quot;), names_to = (&quot;StartEnd&quot;), values_to = &quot;Date&quot;)
+head(halo_data)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   Unit  `Software Versi… `Software OS` `Software OS Ve… HEARTRATE STEPS CALORIES
+##   &lt;chr&gt; &lt;chr&gt;            &lt;chr&gt;                    &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;   
+## 1 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 2 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 3 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 4 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 5 BEAT… 1.0.286427.0     android                     10 62.0      &lt;NA&gt;  &lt;NA&gt;    
+## 6 BEAT… 1.0.286427.0     android                     10 62.0      &lt;NA&gt;  &lt;NA&gt;    
+## # … with 2 more variables: StartEnd &lt;chr&gt;, Date &lt;dttm&gt;</code></pre>
+<p><em>The weather data has quite a few columns that have no data at all or have no real purpose. So first, consolidate some of the columns into a single longer column. </em></p>
+<pre class="r"><code>weather &lt;- austin_weather %&gt;% pivot_longer(cols = c(&quot;WT01&quot;, &quot;WT02&quot;, 
+    &quot;WT03&quot;, &quot;WT04&quot;, &quot;WT05&quot;, &quot;WT06&quot;, &quot;WT08&quot;), names_to = &quot;WT&quot;, 
+    values_to = &quot;WT_value&quot;) %&gt;% pivot_longer(cols = c(&quot;WT01_ATTRIBUTES&quot;, 
+    &quot;WT02_ATTRIBUTES&quot;, &quot;WT03_ATTRIBUTES&quot;, &quot;WT04_ATTRIBUTES&quot;, 
+    &quot;WT05_ATTRIBUTES&quot;, &quot;WT06_ATTRIBUTES&quot;, &quot;WT08_ATTRIBUTES&quot;), 
+    names_to = &quot;WT_Attributes&quot;, values_to = &quot;WT_Attr_val&quot;)
+head(weather)</code></pre>
+<pre><code>## # A tibble: 6 x 24
+##   STATION NAME  LATITUDE LONGITUDE ELEVATION DATE        AWND AWND_ATTRIBUTES
+##   &lt;chr&gt;   &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;date&gt;     &lt;dbl&gt; &lt;chr&gt;          
+## 1 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## 2 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## 3 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## 4 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## 5 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## 6 USW000… AUST…     30.3     -97.8      204. 2019-01-01  6.49 ,,W            
+## # … with 16 more variables: PRCP &lt;dbl&gt;, PRCP_ATTRIBUTES &lt;chr&gt;, SNOW &lt;dbl&gt;,
+## #   SNOW_ATTRIBUTES &lt;chr&gt;, SNWD &lt;dbl&gt;, SNWD_ATTRIBUTES &lt;chr&gt;, TAVG &lt;lgl&gt;,
+## #   TAVG_ATTRIBUTES &lt;lgl&gt;, TMAX &lt;dbl&gt;, TMAX_ATTRIBUTES &lt;chr&gt;, TMIN &lt;dbl&gt;,
+## #   TMIN_ATTRIBUTES &lt;chr&gt;, WT &lt;chr&gt;, WT_value &lt;dbl&gt;, WT_Attributes &lt;chr&gt;,
+## #   WT_Attr_val &lt;chr&gt;</code></pre>
 </div>
 <div id="joiningmerging" class="section level4">
 <h4>Joining/Merging</h4>
-<pre class="r"><code># your joining code
-
-# your joining code</code></pre>
-<p>Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.</p>
+<p><em>In order to join the data, the first consideration is what these datasets have in common. Here, that is the date. However, in the halo data the date has both date and time and is of type POSIXct whereas in the weather data it is of type date. So first, there is a little bit more tidying that must happen. </em></p>
+<pre class="r"><code>halo_data &lt;- halo_data %&gt;% separate(Date, into = c(&quot;Date&quot;, NA), 
+    sep = &quot; &quot;)
+head(halo_data)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   Unit  `Software Versi… `Software OS` `Software OS Ve… HEARTRATE STEPS CALORIES
+##   &lt;chr&gt; &lt;chr&gt;            &lt;chr&gt;                    &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;   
+## 1 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 2 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 3 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 4 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 5 BEAT… 1.0.286427.0     android                     10 62.0      &lt;NA&gt;  &lt;NA&gt;    
+## 6 BEAT… 1.0.286427.0     android                     10 62.0      &lt;NA&gt;  &lt;NA&gt;    
+## # … with 2 more variables: StartEnd &lt;chr&gt;, Date &lt;chr&gt;</code></pre>
+<pre class="r"><code>halo_data$Date &lt;- as.Date(halo_data$Date)
+head(halo_data)</code></pre>
+<pre><code>## # A tibble: 6 x 9
+##   Unit  `Software Versi… `Software OS` `Software OS Ve… HEARTRATE STEPS CALORIES
+##   &lt;chr&gt; &lt;chr&gt;            &lt;chr&gt;                    &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;   
+## 1 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 2 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 3 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 4 BEAT… 1.0.286427.0     android                     10 63.0      &lt;NA&gt;  &lt;NA&gt;    
+## 5 BEAT… 1.0.286427.0     android                     10 62.0      &lt;NA&gt;  &lt;NA&gt;    
+## 6 BEAT… 1.0.286427.0     android                     10 62.0      &lt;NA&gt;  &lt;NA&gt;    
+## # … with 2 more variables: StartEnd &lt;chr&gt;, Date &lt;date&gt;</code></pre>
+<p><em>In order to work with a full set of data, an inner join is probably the best choice. This way, only the dates which have data that includes both fitness data and weather data will be included as these will be the useful data points for evaluation later.</em></p>
+<pre class="r"><code>inner_data &lt;- inner_join(halo_data, weather, by = c(Date = &quot;DATE&quot;))
+# (inner_data) %&gt;% group_by(Date) %&gt;% arrange((Date)) ##
+# testing to look at the range of dates weather %&gt;%
+# group_by(DATE) %&gt;% filter(DATE == 2020-12-14)</code></pre>
+<pre class="r"><code>halo_data %&gt;% summarize(n_distinct(Date))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(Date)`
+##                &lt;int&gt;
+## 1                307</code></pre>
+<pre class="r"><code>weather %&gt;% summarize(n_distinct(DATE))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(DATE)`
+##                &lt;int&gt;
+## 1               1019</code></pre>
+<pre class="r"><code>inner_data %&gt;% summarize(n_distinct(Date))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(Date)`
+##                &lt;int&gt;
+## 1                307</code></pre>
+<pre class="r"><code># halo_data weather inner_data</code></pre>
+<p>The weather data has 1019 distinct dates, the fitness tracker data has 307 distinct dates and the inner join has 307 distinct dates. This is because the weather dataset has data with dates which include all the same dates as the fitness tracker dataset and an inner join joins where both datasets have data for the given join variable. This means that for every date that was in data uploaded by the fitness tracker, data was also available in the weather dataset so that they could be joined there. The halo_data had 2,744,870 rows and the weather had 49,931 rows. The inner join has 134,498,630 rows which means that there are some lost data, as expected since some of the dates are not able to be used in the join. I chose this join because I wanted to look at the combination of data where I have information for both movement activity and weather.</p>
 </div>
 <div id="wrangling" class="section level4">
 <h4>Wrangling</h4>

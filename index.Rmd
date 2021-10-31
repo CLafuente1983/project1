@@ -23,39 +23,77 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 #### Introduction 
 
-Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.
+I am going to be looking at some of the data from my personal fitness tracker and comparing it with the daily weather. Many factors impact how active we are on a daily basis including how busy we are, often with sedentary activities such as school or work but I often feel energized by the cooler weather. I wondered if there was any correlation between my activity levels and the weather or if it was restricted to simply a feeling. I thought that I could compare local weather data along with my fitness tracker data to look at some of the interesting variables tracked by both and see whether there were any interesting observations which could be made. 
+  Fitness tracking data comes from my Amazon Halo band which I began using when it was in beta testing December of 2020. Weather data comes from the National Oceanic and Atmospheric Administration https://www.ncdc.noaa.gov/cdo-web. The NOAA data was downloaded from the NOAA site and then uploaded here, similarly, the halo data has been compiled by Amazon, downloaded and then uploaded here also as a csv file.  
 
 ```{R}
 # read your datasets in here, e.g., with read_csv()
 library(tidyverse)
+library(dplyr)
+library(tidyr)
 halo_data<-read_csv("data/HaloData.csv")
 
-weather <- read_csv("data/austin_weather.csv")
-halo_data
-weather
 
+glimpse(halo_data)
 head(halo_data)
-head(weather)
+
+austin_weather <- read_csv("data/2763043.csv")
+
+head(austin_weather)
+glimpse(austin_weather)
+halo_data %>% group_by("Data Type") %>% filter(`Data Type`=="STEPS")
 ```
 
 #### Tidying: Reshaping
 
 If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.
 
-```{R}
-# your tidying code (if applicable; can also wait until wrangling section)
-```
+*To begin, the halo data has several types of data (heartrate, steps, and calories) all listed in the `Data Type` column so the first step is to give each of those types their own columns. The values from the amounts column should be assigned to these values for those days. *
 
-    
+```{R}
+halo_data <- halo_data %>% pivot_wider(names_from=`Data Type`,values_from="Amounts") ##%>% filter(!is.na(STEPS)) ## testing that amounts were appropriately assigned
+head(halo_data)
+```
+*Next, there are quite a few values for each of the time segments currently assigned a row. So we will separate the amounts so that each value has its own row.*
+```{r}
+halo_data <- halo_data %>% separate_rows(HEARTRATE,sep=", ") %>% separate_rows(STEPS,sep=", ") %>% separate_rows(CALORIES,sep=", ")
+```
+*Then, pivot longer so that there aren't columns for start and end time but rather one column that tells whether it is a start or end time and another column that has the date and time. *
+```{r}
+halo_data <- halo_data %>% pivot_longer(cols = c("Start Time", "End Time"), names_to = ("StartEnd"), values_to = "Date")
+head(halo_data)
+```
+*The weather data has quite a few columns that have no data at all or have no real purpose. So first, consolidate some of the columns into a single longer column. *
+```{r}
+austin_weather %>% pivot_longer(cols = c("WT01", "WT02", "WT03", "WT04", "WT05", "WT06", "WT08") , names_to = "WT",  values_to = "WT_value") %>% pivot_longer(cols = c("WT01_ATTRIBUTES", "WT02_ATTRIBUTES", "WT03_ATTRIBUTES", "WT04_ATTRIBUTES", "WT05_ATTRIBUTES", "WT06_ATTRIBUTES", "WT08_ATTRIBUTES"), names_to = "WT_Attributes", values_to = "WT_Attr_val") -> weather
+head(weather)
+```
 #### Joining/Merging
 
+*In order to join the data, the first consideration is what these datasets have in common. Here, that is the date. However, in the halo data the date has both date and time and is of type POSIXct whereas in the weather data it is of type date. So first, there is a little bit more tidying that must happen. *
 ```{R}
-# your joining code
-
-# your joining code
+halo_data %>% separate(Date, into = c("Date", NA), sep = " ") -> halo_data
+head(halo_data)
+halo_data$Date<-as.Date(halo_data$Date)
+head(halo_data)
+```
+*In order to work with a full set of data, an inner join is probably the best choice. This way, only the dates which have data that includes both fitness data and weather data will be included as these will be the useful data points for evaluation later.*
+```{r}
+inner_data <- inner_join(halo_data, weather, by=c("Date" = "DATE") )
+#(inner_data) %>% group_by(Date) %>% arrange((Date)) ## testing to look at the range of dates
+#weather %>% group_by(DATE) %>% filter(DATE == 2020-12-14)
 ```
 
-Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
+```{r}
+halo_data %>% summarize(n_distinct(Date))
+weather %>% summarize(n_distinct(DATE))
+inner_data %>% summarize(n_distinct(Date))
+#halo_data
+#weather
+#inner_data
+```
+
+The weather data has 1019 distinct dates, the fitness tracker data has 307 distinct dates and the inner join has 307 distinct dates. This is because the weather dataset has data with dates which include all the same dates as the fitness tracker dataset and an inner join joins where both datasets have data for the given join variable. This means that for every date that was in data uploaded by the fitness tracker, data was also available in the weather dataset so that they could be joined there. The halo_data had 2,744,870 rows and the weather had 49,931 rows. The inner join has 134,498,630 rows which means that there are some lost data, as expected since some of the dates are not able to be used in the join. I chose this join because I wanted to look at the combination of data where I have information for both movement activity and weather.
 
 ####  Wrangling
 
