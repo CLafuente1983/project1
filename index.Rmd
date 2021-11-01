@@ -21,7 +21,7 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 ### Cristina E Lafuente
 
-#### Introduction 
+### Introduction 
 
 I am going to be looking at some of the data from my personal fitness tracker and comparing it with the daily weather. Many factors impact how active we are on a daily basis including how busy we are, often with sedentary activities such as school or work but I often feel energized by the cooler weather. I wondered if there was any correlation between my activity levels and the weather or if it was restricted to simply a feeling. I thought that I could compare local weather data along with my fitness tracker data to look at some of the interesting variables tracked by both and see whether there were any interesting observations which could be made. 
   Fitness tracking data comes from my Amazon Halo band which I began using when it was in beta testing December of 2020. Weather data comes from the National Oceanic and Atmospheric Administration https://www.ncdc.noaa.gov/cdo-web. The NOAA data was downloaded from the NOAA site and then uploaded here, similarly, the halo data has been compiled by Amazon, downloaded and then uploaded here also as a csv file.  
@@ -41,12 +41,13 @@ austin_weather <- read_csv("data/2763043.csv")
 
 head(austin_weather)
 glimpse(austin_weather)
-halo_data %>% group_by("Data Type") %>% filter(`Data Type`=="STEPS")
+#halo_data %>% group_by("Data Type") %>% filter(`Data Type`=="STEPS")
 ```
 
-#### Tidying: Reshaping
 
-If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.
+### Tidying: Reshaping
+
+
 
 *To begin, the halo data has several types of data (heartrate, steps, and calories) all listed in the `Data Type` column so the first step is to give each of those types their own columns. The values from the amounts column should be assigned to these values for those days. *
 
@@ -54,38 +55,43 @@ If your datasets are tidy already, demonstrate that you can reshape data with pi
 halo_data <- halo_data %>% pivot_wider(names_from=`Data Type`,values_from="Amounts") ##%>% filter(!is.na(STEPS)) ## testing that amounts were appropriately assigned
 head(halo_data)
 ```
-*Next, there are quite a few values for each of the time segments currently assigned a row. So we will separate the amounts so that each value has its own row.*
+*Next, there are quite a few values for each of the time segments currently assigned a row. So we will separate the amounts so that each value has its own row. Then sum all the steps over the course of each day*
 ```{r}
 halo_data <- halo_data %>% separate_rows(HEARTRATE,sep=", ") %>% separate_rows(STEPS,sep=", ") %>% separate_rows(CALORIES,sep=", ")
+head(halo_data)
+#halo_data_w_steps <- halo_data %>% group_by(Date) %>% mutate("daily_steps" = sum(as.numeric(STEPS), na.rm=T))
 ```
 *Then, pivot longer so that there aren't columns for start and end time but rather one column that tells whether it is a start or end time and another column that has the date and time. *
 ```{r}
-halo_data <- halo_data %>% pivot_longer(cols = c("Start Time", "End Time"), names_to = ("StartEnd"), values_to = "Date")
-head(halo_data)
+halo_data2 <- halo_data %>% pivot_longer(cols = c("Start Time", "End Time"), names_to = ("StartEnd"), values_to = "Date")
+head(halo_data2)
+
 ```
 *The weather data has quite a few columns that have no data at all or have no real purpose. So first, consolidate some of the columns into a single longer column. *
 ```{r}
 austin_weather %>% pivot_longer(cols = c("WT01", "WT02", "WT03", "WT04", "WT05", "WT06", "WT08") , names_to = "WT",  values_to = "WT_value") %>% pivot_longer(cols = c("WT01_ATTRIBUTES", "WT02_ATTRIBUTES", "WT03_ATTRIBUTES", "WT04_ATTRIBUTES", "WT05_ATTRIBUTES", "WT06_ATTRIBUTES", "WT08_ATTRIBUTES"), names_to = "WT_Attributes", values_to = "WT_Attr_val") -> weather
 head(weather)
 ```
-#### Joining/Merging
+### Joining/Merging
 
-*In order to join the data, the first consideration is what these datasets have in common. Here, that is the date. However, in the halo data the date has both date and time and is of type POSIXct whereas in the weather data it is of type date. So first, there is a little bit more tidying that must happen. *
+*In order to join the data, the first consideration is what these datasets have in common. Here, that is the date. However, in the halo data the date has both date and time and is of type POSIXct whereas in the weather data it is of type date. So first, there is a little bit more tidying that must happen. In addition, to calculate total daily steps, that is something that must be done now, before joining data so that the variables appear the proper number of times. Since they will be multiplied as they are joined with the weather data. *
 ```{R}
-halo_data %>% separate(Date, into = c("Date", NA), sep = " ") -> halo_data
-head(halo_data)
-halo_data$Date<-as.Date(halo_data$Date)
-head(halo_data)
+halo_data2 %>% separate(Date, into = c("Date", NA), sep = " ") -> halo_data2
+head(halo_data2)
+halo_data2$Date<-as.Date(halo_data2$Date)
+head(halo_data2)
+halo_data_w_steps <- halo_data2 %>% group_by(Date) %>% mutate("daily_steps" = sum(as.numeric(STEPS), na.rm=T))
+head(halo_data_w_steps)
 ```
 *In order to work with a full set of data, an inner join is probably the best choice. This way, only the dates which have data that includes both fitness data and weather data will be included as these will be the useful data points for evaluation later.*
 ```{r}
-inner_data <- inner_join(halo_data, weather, by=c("Date" = "DATE") )
+inner_data <- inner_join(halo_data_w_steps, weather, by=c("Date" = "DATE") )
 #(inner_data) %>% group_by(Date) %>% arrange((Date)) ## testing to look at the range of dates
 #weather %>% group_by(DATE) %>% filter(DATE == 2020-12-14)
 ```
 
 ```{r}
-halo_data %>% summarize(n_distinct(Date))
+halo_data_w_steps %>% summarize(n_distinct(Date))
 weather %>% summarize(n_distinct(DATE))
 inner_data %>% summarize(n_distinct(Date))
 #halo_data
@@ -95,42 +101,142 @@ inner_data %>% summarize(n_distinct(Date))
 
 The weather data has 1019 distinct dates, the fitness tracker data has 307 distinct dates and the inner join has 307 distinct dates. This is because the weather dataset has data with dates which include all the same dates as the fitness tracker dataset and an inner join joins where both datasets have data for the given join variable. This means that for every date that was in data uploaded by the fitness tracker, data was also available in the weather dataset so that they could be joined there. The halo_data had 2,744,870 rows and the weather had 49,931 rows. The inner join has 134,498,630 rows which means that there are some lost data, as expected since some of the dates are not able to be used in the join. I chose this join because I wanted to look at the combination of data where I have information for both movement activity and weather.
 
-####  Wrangling
+###  Wrangling
 
+The first step when wrangling this data is to look at what makes for useful data when it comes to evaluating the weather. There is a minimum temperature each day and a maximum temperature each day but the column for average temperature is just NA which makes that less useful data. So adding a temperature midpoint(mean daily temperature) column might be somewhat more valuable when it comes to looking at temperature. The low temperature typically occurs overnight so looking at a midpoint between the overnight low and the afternoon high might be useful. 
 ```{R}
-# your wrangling code
 
-# your wrangling code
+inner_data %>% group_by(Date) %>% mutate("T_midpoint" = (TMIN +TMAX)/2) -> inner_data_w_mid
+head(inner_data_w_mid)
+```
+```{r}
+library(stringr)
+daily_data <- inner_data %>% summarize_if(is.numeric, list(average = mean, std = sd, med= median))
+unlist(str_extract(inner_data$NAME, "A[A-Za-z]+[ ][A-Za-z]+"))
+```
+Here, we have searched the words in the name of the weather station for the word that starts with an A and the following word. In this case, because the location is the Camp Mabry Weather Station in Austin Texas, the first two words are Austin Camp. Because of the size of the data set and the fact that every measurement was taken at the Camp Mabry weather station, this returns a list of nearly 150,000,000 entries of all the same word Austin Camp. Unfortunately, it turns out that nearly every word in every slot is redundant there are not many categorical variables and those that do exist will return lists where the first 50,000,000 words are all the same. The best way to illustrate that is to look for the different variables in the "unit" vector of the dataframe. Unfortunately, because of the size of the data, I am not aware of how to maximize this function to look through the full set of data and find the various functions using REGEX. It seems much more efficient to use dplyr functions to do this. 
 
-# your wrangling code
+
+
+In order to more effectively examine the data, some statistics will be more relevant to look at than others. For example, knowing the daily totals for step counts is more important than having a list of days with various steps and having the average daily heartrate might be a more helpful statistic than a list of heartrates measured throughout the day. 
+```{r}
+#daily_steps <- inner_data_w_mid %>% group_by(Date) %>% summarize("daily steps" = sum(as.numeric(STEPS), na.rm=T))
+daily_hr <- inner_data_w_mid %>% group_by(Date) %>% summarize("avg_HR"= mean(as.numeric(HEARTRATE), na.rm=T))
+```
+Aside from a set of summary statistics, it will be useful to keep those statistics within the dataframe as their own columns.
+```{r}
+#df_w_step_ct <- inner_data_w_mid %>% group_by(Date) %>% mutate("daily_steps" = sum(as.numeric(STEPS), na.rm = T))
+inner_data_w_mid %>% group_by(Date) %>% mutate("avg_daily_hr" = mean(as.numeric(HEARTRATE), na.rm = T)) -> steps_and_hr 
+head(steps_and_hr)
+```
+At this point, several of the colums are unnecessary and do not actually provide any information that helps. Those columns such as software information about the fitness tracker can easily be removed without removing any relevant information. Additionally, the columns including the string "ATTRIBUTES" contain unreadable information that is not really helpful for this analysis. 
+```{r}
+cleaned_df <- steps_and_hr %>% select(-c("Software Version", "Software OS", "Software OS Version")) %>% select(-(contains("ATTRIBUTES")))
+head(cleaned_df)
+```
+Using the information contained in the dataset now, by summarizing all numeric columns we can find the highest average heartrate recorded over the  course of a day as well as the highest step count recorded over the course of a day. This gives some interesting information such as, that the highest step count was not on the day with the highest heartrate, the highest average heartrate was 76 beats per minute and the highest number of daily steps was 46,772 steps.
+
+```{r}
+cleaned_df  %>% summarize_if(is.numeric, max) %>% filter(avg_daily_hr == max(avg_daily_hr))
+cleaned_df  %>% summarize_if(is.numeric, max) %>% filter(daily_steps == max(daily_steps))
+```
+Additionally, the data can be examined to find the date with the lowest number of steps. That day happens to fall 3 days after surgery for a broken leg (interestingly, not on the day of the surgery).
+```{r}
+library(knitr)
+min_steps <- cleaned_df %>% group_by(daily_steps, avg_daily_hr) %>% arrange((daily_steps)) %>% slice_head(n=1) 
+#min_steps # %>% slice(n=1, with_ties = F) 
+min_steps %>% filter(daily_steps < 3000) %>% select("Date", "daily_steps") %>% kable(digits = 2, align = 'c')
+```
+Create a column that tells us whether the weather is rainy(or in a very rare instance, snowy) that day or not. Additionally, set a cut off of 75 degrees above which we will consider the weather warm and below which we will consider the weather cool. 
+```{r}
+clean_df <- cleaned_df %>%  mutate(RainOrShine = case_when((PRCP > 0) ~ "Rainy", (PRCP == 0) ~ "Clear"))
+head(clean_df)
+
+clean_df <- clean_df %>% mutate(WarmOrCool = case_when((TMAX >75) ~ "Warm", (TMAX <= 75) ~ "Cool"))
+
+```
+Using these factors, we can group by the these, filter down to the cool clear days and find the average daily steps then compare those to the average daily steps overall as well as the average daily steps of warm clear days to see if there is any correlation between the weather and average steps taken. Excluding rainy days will prevent the number of rainy days from impacting the interpretation of whether there is any correlation between the average steps on warm days and the average steps on cool days. 
+```{r}
+clean_df %>% group_by(WarmOrCool, RainOrShine) %>% filter(RainOrShine == "Clear" & WarmOrCool == "Cool") %>% summarize(mean(daily_steps))
+
+clean_df %>% group_by(WarmOrCool, RainOrShine) %>% filter(RainOrShine == "Clear" & WarmOrCool == "Warm") %>% summarize(mean(daily_steps))
+```
+Now that we have examined the difference in the average daily steps on cool clear days and warm clear days, it is a good idea to see how many cool clear days occur in the data when compared to the number of warm clear days. This way we can compare how many days were raining and how many days were clear. We can also see how many days were warm and how many days were cool. It is natural that, given our location (geographically) there will be more warm than cool days but of course it would be ideal if there were equal points of measurements.
+```{r}
+clean_df %>% group_by(WarmOrCool, RainOrShine) %>% summarize(n=n()) 
+```
+Here we can see that there are about half as many cool days as warm days (both rainy and cool as well as rainy and clear) as well as being able to see that there are about half as many cool clear days as warm clear days. This is important because rainy weather is likely to impact the number of steps regardless of temperature. 
+
+Next, we can look at how many NAs are in each column for each day. 
+```{r}
+library(knitr)
+count_na <- function(x) {sum(is.na(x))}
+clean_df %>% summarize_all(count_na) %>% kable(align = 'c', col.names=str_to_title(names(.)))
 ```
 
-Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
 
+```{r}
+clean_by_date <-clean_df %>% select(c("daily_steps", "TMAX", "TMIN", "T_midpoint", "avg_daily_hr", "PRCP")) %>% summarise_all(list(avg=mean, std = sd, med=median ))
+
+clean_by_date %>% select(-(8:12)) %>% kable(digits = 1, align = 'c', col.names=str_to_title(names(.)))
+```
+This is the summary statistics by day. Because of the size of the data set, it became increasingly challenging to work with the data on the server. However, summarizing by day creates a smaller set of data that is easier to manipulate and use. Here, we can keep the important numerical data, important for visualization, as well as for understanding overall trends. However, we can see that standard deviation per day actually doesn't calculate anything here and median and mean are also only calculating the given values because they are restricted to calculating everything daily at this point. 
+
+Below, we can use the cleaned data from above and calculate all the actual median, standard deviation, and mean values for all 307 days in the entire data set. Because of the way the data was arranged and my lack of familiarity with very large datasets, there are some extra variables, however, in this way, I have been able to still get  the useful data about the entire data set. Unfortunately, there is some redundancy within the table but the table is still very useful in finding the mean, median, minimum, maximum and standard deviation of the variables over the course of the year.  
+```{r}
+clean_by_date %>% summarize_all(list(mean = mean, std =sd, med = median, minimum = min, maximum = max)) %>% select(-c(8:13, 27:32, 46:52, 65:71, 85:90)) %>% kable(digits = 2, align = 'c', col.names=str_to_title(names(.)))
+```
 
 #### Visualizing
 
+
+####Visualization 1
 ```{R}
-# your plot 1
+library(ggplot2)
+clean_by_date %>% ggplot(aes(x=Date, y=daily_steps_avg, color = T_midpoint_avg)) + geom_point() +  geom_smooth(method = "lm") + scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ labs(title = "Steps Per day Colored by Temperature", x= "Time", y = "Steps", color = "Average Daily Temp")
 ```
 
-Your discussion of plot 1
-
+This is a plot that includes the points for steps taken each day of the 307 days leading up to 10/14/2021. When visualized in this way, there is clear correlation between the cooler weather and the number of steps taken each day. I broke my leg on 8/10/2021 and there is a sharp and sustained decline there in the number of steps taken per day.
 ```{R}
-# your plot 2
+clean_by_date %>% ggplot(aes(x=Date, y=daily_steps_avg, color = T_midpoint_avg)) + geom_point() +  geom_smooth(method = "lm") + scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", limits = as.Date(c('2020-12-01','2021-08-10')))+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ labs(title = "Steps Per day Colored by Temperature", x= "Time", y = "Steps", color = "Average Daily Temp")
 ```
 
-Your discussion of plot 2
+By changing the dates to exclude the portion when I had a broken leg which definitely impacted the number of steps I was able to take on a daily basis, we can see that the correlation is somewhat weaker though still exists. From the colder weather to the warmer weather, there appears to be about a difference of 5000 steps per day. Which is not insignificant.  
 
 ```{R}
-# your plot 3
+clean_by_date %>% ggplot(aes(x=Date, y=avg_daily_hr_avg, color = T_midpoint_avg)) + geom_point() +  geom_smooth(method = "lm") + scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", limits = as.Date(c('2020-12-01','2021-08-10')))+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ labs(title = "HR Per day Colored by Temperature", x= "Time", y = "HR", color = "Average Daily Temp")
+```
+In looking at the average daily heartrate when compared to the average daily temperature, we can see that there is not really any kind of correlation. The linear modelling is horizontal and there is no significant change regardless of the temperature. 
+
+####Visualization 2
+```{r}
+clean_by_date %>% ggplot(aes(x=Date)) + geom_line(aes(y=daily_steps_avg, color = "steps"))  + 
+  geom_line(aes( y=T_midpoint_avg*350, color = "Temperature"))+ 
+  scale_y_continuous(sec.axis = sec_axis(~.*.0035, name = "Temperature(F)")) + scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", limits = as.Date(c('2020-12-01','2021-08-10')))+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+labs(title = "Temperature and Steps per day", x= "Time", y = "Steps")
+```
+Here, Temperature is plotted as a line against the line of steps per day. Accounting for the time when I was immobilized with a leg injury, there is still a clear decrease in overall activity as temperature becomes increasingly warmer. This is an interesting graphic. While it does not provide the more definitive data of a mean per temperature comparison, it does provide a nice visual aid. 
+
+```{r}
+clean_by_date %>% ggplot(aes(x=Date)) + geom_line(aes(y=TMAX_avg, color = "T Max"))  + 
+  geom_line(aes( y=TMIN_avg, color = "Temperature min")) +
+  scale_y_continuous(sec.axis = sec_axis(~.*1, name = "Temperature(F)")) + scale_x_date(date_breaks = "1 month", date_minor_breaks = "1 week", limits = as.Date(c('2020-12-01','2021-08-10')))+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+labs(title = "Max and Min Temperature Daily", x= "Time", y = "Temperature")
 ```
 
-Your discussion of plot 3
+This graph provides an interesting view of the difference between the max and min temperatures on a daily basis and provides an interesting way to visualize the increase of the temperature. 
+####Visualization3
+```{r}
+clean_by_date %>% ggplot(aes(Date, daily_steps_avg )) + geom_col(aes(Date, fill = T_midpoint_avg)) + scale_x_date(date_breaks = "1 month", limits = as.Date(c('2020-12-01','2021-08-10')))+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+labs(title = "Steps per Day", x= "Time", y = "Steps", color = "Temperature")
+```
+Here, it is interesting to see that the darker colored lines which are related to the cooler days are related to longer lines, generally. However, this is probably not the best way to visualize or understand whether there is a trend of overall increasing step counts correlating to cooler days or decreasing with correlation to warmer days. 
+
+```{r}
+clean_by_date %>% ggplot(aes(Date, PRCP_avg)) + geom_bar(stat="summary")+ geom_line(aes(y=daily_steps_avg/20000, color = "steps"))  + scale_y_continuous(sec.axis = sec_axis(~.*.00002, name = "Steps")) +scale_x_date(date_breaks = "1 month", limits = as.Date(c('2020-12-01','2021-08-10')))+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(title = "Steps Per Day and Precipitation" , x= "Time", y = "Precipitation (in)")
+```
+Considering the idea that precipitation is a discrete event, it seemed that it might be interesting to compare the precipitation to the steps of the same day. Since some days have precipitation but only small amounts that might not be expected to interfere with day to day activities, a bar graph seemed that it might be ideal to show these discrete events and the levels at which they occur. With an overlay of the steps taken each day, we can see that on days with high levels of precipitation, the number of steps does appear to have some correlation with a lower step counts. 
 
 #### Concluding Remarks
 
-If any!
+This set of data is quite large and became very difficult to work with very quickly. Fortunately, I was able to clean it up a few times and ultimately, able to find the data to answer the question I started this project with as well as to support that answer with data and visualization. I believe that as I continue to learn in this course, I will develop better skills to deal with data like this. For example, I have already learned that I should have taken a random sample of the data to deal with instead of simply the first 500 rows. In this way, I would have been able to get a better idea of how the code would have worked for the entire set of data. Ultimately, I think that this has provided quite a bit of interesting information. In Austin, we had about twice as many 'warm' days as 'cool' days on average, I took about 5000 more steps on cool clear days than on warm clear days, and when there is significant precipitation, I am likely to take less steps. I look forward to continuing to learn more interesting ways of dealing with data of this type and of how to interpret these statistics!     
 
 
 
